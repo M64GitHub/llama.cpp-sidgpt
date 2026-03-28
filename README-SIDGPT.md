@@ -50,6 +50,17 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release \
 cmake --build build -j$(nproc)
 ```
 
+### Apple Silicon (M1/M2/M3/M4)
+
+Metal GPU is auto-detected on macOS -- no extra flags needed.
+All layers offloaded to GPU by default via `-ngl 99`.
+GGUF model files are portable across platforms.
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target sidgpt-generate -j$(sysctl -n hw.ncpu)
+```
+
 ## Usage
 
 ```bash
