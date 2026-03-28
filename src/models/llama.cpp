@@ -12,6 +12,15 @@ llm_build_llama<embed>::llm_build_llama(const llama_model & model, const llm_gra
 
     inpL = build_inp_embd(model.tok_embd);
 
+    // SID-GPT: add cyclic frame position embeddings
+    if (model.frame_pos_embd) {
+        ggml_tensor * inp_frame_pos = build_inp_frame_pos();
+        ggml_tensor * frame_pos = ggml_get_rows(ctx0, model.frame_pos_embd, inp_frame_pos);
+        cb(frame_pos, "frame_pos_embd", -1);
+        inpL = ggml_add(ctx0, inpL, frame_pos);
+        cb(inpL, "inpL", -1);
+    }
+
     // inp_pos - contains the positions
     ggml_tensor * inp_pos = build_inp_pos();
 

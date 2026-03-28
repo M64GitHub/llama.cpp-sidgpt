@@ -377,6 +377,7 @@ void llama_model::load_hparams(llama_model_loader & ml) {
     ml.get_key(LLM_KV_EXPERT_USED_COUNT,       hparams.n_expert_used,   false);
     ml.get_key(LLM_KV_EXPERT_GROUP_COUNT,      hparams.n_expert_groups, false);
     ml.get_key(LLM_KV_EXPERT_GROUP_USED_COUNT, hparams.n_group_used,    false);
+    ml.get_key(LLM_KV_FRAME_SIZE,              hparams.frame_size,      false);
 
     if (arch == LLM_ARCH_WAVTOKENIZER_DEC) {
         ml.get_key(LLM_KV_FEATURES_LENGTH,  hparams.n_embd);
@@ -2728,6 +2729,11 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
             case LLM_ARCH_LLAMA_EMBED:
                 {
                     tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
+
+                    // SID-GPT frame position embeddings (optional)
+                    if (hparams.frame_size > 0) {
+                        frame_pos_embd = create_tensor(tn(LLM_TENSOR_FRAME_POS_EMBD, "weight"), {n_embd, hparams.frame_size}, TENSOR_NOT_REQUIRED);
+                    }
 
                     // output
                     output_norm = create_tensor(tn(LLM_TENSOR_OUTPUT_NORM, "weight"), {n_embd}, 0);
