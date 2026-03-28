@@ -237,10 +237,8 @@ int main(int argc, char ** argv) {
         llama_sampler_chain_init(sparams);
 
     if (temp > 0.0f) {
-        // Order must match Zig sidgpt:
-        // temp -> top_k -> top_p -> sample
-        llama_sampler_chain_add(smpl,
-            llama_sampler_init_temp(temp));
+        // Standard llama.cpp order:
+        // top_k -> top_p -> temp -> dist
         if (top_k > 0) {
             llama_sampler_chain_add(smpl,
                 llama_sampler_init_top_k(top_k));
@@ -249,6 +247,8 @@ int main(int argc, char ** argv) {
             llama_sampler_chain_add(smpl,
                 llama_sampler_init_top_p(top_p, 1));
         }
+        llama_sampler_chain_add(smpl,
+            llama_sampler_init_temp(temp));
         llama_sampler_chain_add(smpl,
             llama_sampler_init_dist(seed));
     } else {
