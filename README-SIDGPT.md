@@ -104,6 +104,6 @@ The GGUF file uses `general.architecture = "llama"` with these additions:
 - [x] Model loading with frame_pos_embd
 - [x] Unconditional generation (SEP frame prompt)
 - [x] F32 inference working
-- [ ] --seed-file support (prompt from existing .sidgpt)
-- [ ] Quantization testing (Q4_K_M, Q8_0 via llama-quantize)
-- [ ] Logit verification against PyTorch reference
+- [x] --seed-file support (prompt from existing .sidgpt)
+- [x] Quantization testing (Q4_K_M, Q8_0 via llama-quantize)
+- [x] Logit verification against PyTorch reference

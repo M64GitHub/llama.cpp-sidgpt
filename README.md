@@ -1,3 +1,13 @@
+# llama.cpp-sidgpt
+
+> **This is a patched fork of [llama.cpp](https://github.com/ggml-org/llama.cpp) adding support for [SID-GPT v2](https://github.com/M64GitHub/SID-GPT-v2) -- a transformer that generates Commodore 64 chiptune music.**
+>
+> The patch adds an optional cyclic frame position embedding (`frame_pos_embd`) to the LLaMA architecture. Standard LLaMA models are unaffected. Includes `sidgpt-generate`, a custom inference tool that outputs SID register streams as uint16 binary.
+>
+> See **[README-SIDGPT.md](README-SIDGPT.md)** for build instructions, usage, and technical details of the patch.
+
+---
+
 # llama.cpp
 
 ![llama](https://user-images.githubusercontent.com/1991296/230134379-7181e485-c521-4d23-a0d6-f7b3b61ba524.png)
