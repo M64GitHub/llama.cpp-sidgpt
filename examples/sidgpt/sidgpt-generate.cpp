@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -24,13 +25,14 @@ static void print_usage(const char * prog) {
         "  -m PATH          Model file (required)\n"
         "  -n N             Frames to generate (default: 500)\n"
         "  --temp F         Temperature (default: 0.85)\n"
-        "  --top-k N        Top-K sampling (default: 0=off)\n"
+        "  --top-k N        Top-K sampling (default: 50)\n"
         "  --top-p F        Top-P sampling (default: 1.0)\n"
         "  --seed N         RNG seed (default: random)\n"
         "  --context-keep N Keep N%% of context on overflow\n"
         "                   (25/50/75, default: 0=off)\n"
         "  --seed-file PATH Prompt from .bin/.sidgpt file\n"
         "  --seed-frames N  Frames to extract (default: 10)\n"
+        "  --compat         F32 KV cache, no flash attention\n"
         "  -o PATH          Output file (default: stdout)\n"
         "  -ngl N           GPU layers (default: 99)\n"
         "\n"
@@ -103,12 +105,14 @@ int main(int argc, char ** argv) {
     std::string seed_file;
     int n_frames     = 500;
     float temp       = 0.85f;
-    int top_k        = 0;
+    int top_k        = 50;
     float top_p      = 1.0f;
     uint32_t seed    = LLAMA_DEFAULT_SEED;
     int context_keep = 0;
     int seed_frames  = 10;
     int ngl          = 99;
+    bool compat      = false;
+    bool debug_logits = false;
 
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-m") && i+1 < argc) {
@@ -133,6 +137,10 @@ int main(int argc, char ** argv) {
             output_path = argv[++i];
         } else if (!strcmp(argv[i], "-ngl") && i+1 < argc) {
             ngl = std::atoi(argv[++i]);
+        } else if (!strcmp(argv[i], "--compat")) {
+            compat = true;
+        } else if (!strcmp(argv[i], "--debug-logits")) {
+            debug_logits = true;
         } else if (!strcmp(argv[i], "-h") ||
                    !strcmp(argv[i], "--help")) {
             print_usage(argv[0]);
@@ -217,6 +225,16 @@ int main(int argc, char ** argv) {
     ctx_params.n_ctx   = n_ctx;
     ctx_params.n_batch = n_prompt;
     ctx_params.no_perf = false;
+
+    if (compat) {
+        ctx_params.type_k = GGML_TYPE_F32;
+        ctx_params.type_v = GGML_TYPE_F32;
+        ctx_params.flash_attn_type =
+            LLAMA_FLASH_ATTN_TYPE_DISABLED;
+        fprintf(stderr,
+            "[sidgpt] compat: f32 KV cache, "
+            "no flash attention\n");
+    }
 
     llama_context * ctx =
         llama_init_from_model(model, ctx_params);
@@ -304,6 +322,30 @@ int main(int argc, char ** argv) {
                     n_slides, n_prompt + i,
                     pos_max + 1 - drop);
             }
+        }
+
+        // dump raw logits before sampling
+        if (debug_logits && i < FRAME_SIZE) {
+            const float * logits =
+                llama_get_logits(ctx);
+            int n_vocab =
+                llama_vocab_n_tokens(
+                    llama_model_get_vocab(model));
+            // find top 10
+            std::vector<std::pair<float,int>> lv(
+                n_vocab);
+            for (int j = 0; j < n_vocab; j++)
+                lv[j] = {logits[j], j};
+            std::partial_sort(lv.begin(),
+                lv.begin() + 10, lv.end(),
+                [](auto & a, auto & b) {
+                    return a.first > b.first;
+                });
+            fprintf(stderr, "[logits tok %2d]", i);
+            for (int j = 0; j < 10; j++)
+                fprintf(stderr, " %3d:%7.2f",
+                    lv[j].second, lv[j].first);
+            fprintf(stderr, "\n");
         }
 
         llama_token tok =
